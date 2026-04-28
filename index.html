@@ -1,1042 +1,440 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#060817" />
-  <meta name="description" content="Aurora Command is a private experimental web cockpit by Terence Lewis, linking software, energy, devices, labs, media, and social channels from one neon cyberpunk landing page." />
-  <title>Aurora Command | Experimental Web Cockpit</title>
-
-  <style>
-    :root {
-      --bg: #050612;
-      --bg-2: #08111f;
-      --panel: rgba(9, 18, 38, 0.72);
-      --panel-strong: rgba(8, 12, 28, 0.92);
-      --line: rgba(140, 245, 255, 0.18);
-      --line-hot: rgba(255, 204, 77, 0.42);
-      --text: #edf7ff;
-      --muted: #99aac5;
-      --cyan: #58f6ff;
-      --blue: #5b8cff;
-      --pink: #ff4fd8;
-      --amber: #ffd166;
-      --green: #55ff9f;
-      --red: #ff4d6d;
-      --shadow: 0 24px 80px rgba(0, 0, 0, 0.48);
-      --radius-xl: 28px;
-      --radius-lg: 20px;
-      --max: 1200px;
-      --nav-height: 72px;
-    }
-
-    * { box-sizing: border-box; }
-
-    html {
-      scroll-behavior: smooth;
-      background: var(--bg);
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      overflow-x: hidden;
-      color: var(--text);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background:
-        radial-gradient(circle at 10% 5%, rgba(255, 79, 216, 0.22), transparent 32rem),
-        radial-gradient(circle at 88% 12%, rgba(88, 246, 255, 0.24), transparent 34rem),
-        radial-gradient(circle at 50% 95%, rgba(255, 209, 102, 0.12), transparent 28rem),
-        linear-gradient(135deg, #03040d 0%, #08111f 46%, #050612 100%);
-    }
-
-    body.nav-open { overflow: hidden; }
-
-    a { color: inherit; text-decoration: none; }
-
-    button, input { font: inherit; }
-
-    .skip-link {
-      position: fixed;
-      left: 1rem;
-      top: -4rem;
-      z-index: 9999;
-      padding: 0.85rem 1rem;
-      border-radius: 999px;
-      background: var(--cyan);
-      color: #04101c;
-      font-weight: 800;
-      transition: top 0.2s ease;
-    }
-
-    .skip-link:focus { top: 1rem; }
-
-    .noise,
-    .scanlines,
-    .grid-glow {
-      pointer-events: none;
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-    }
-
-    .noise {
-      opacity: 0.08;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.65'/%3E%3C/svg%3E");
-    }
-
-    .scanlines {
-      opacity: 0.14;
-      background: repeating-linear-gradient(to bottom, transparent 0 5px, rgba(255,255,255,0.06) 6px, transparent 7px);
-      mix-blend-mode: overlay;
-    }
-
-    .grid-glow {
-      opacity: 0.35;
-      background-image:
-        linear-gradient(rgba(88,246,255,0.08) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(88,246,255,0.08) 1px, transparent 1px);
-      background-size: 56px 56px;
-      mask-image: linear-gradient(to bottom, transparent, black 18%, black 72%, transparent);
-    }
-
-    .site-header {
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      height: var(--nav-height);
-      border-bottom: 1px solid var(--line);
-      background: rgba(4, 7, 18, 0.78);
-      backdrop-filter: blur(20px) saturate(145%);
-      -webkit-backdrop-filter: blur(20px) saturate(145%);
-    }
-
-    .nav-shell {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: min(100% - 1.25rem, var(--max));
-      height: 100%;
-      margin-inline: auto;
-      gap: 1rem;
-    }
-
-    .brand {
-      display: inline-flex;
-      align-items: center;
-      min-width: 0;
-      gap: 0.75rem;
-    }
-
-    .brand-mark {
-      position: relative;
-      display: grid;
-      flex: 0 0 auto;
-      width: 44px;
-      height: 44px;
-      place-items: center;
-      overflow: hidden;
-      border: 1px solid rgba(88, 246, 255, 0.38);
-      border-radius: 16px;
-      background: linear-gradient(135deg, rgba(88,246,255,0.95), rgba(255,79,216,0.8) 48%, rgba(255,209,102,0.9));
-      box-shadow: 0 0 32px rgba(88,246,255,0.22), inset 0 0 18px rgba(255,255,255,0.28);
-      color: #020714;
-      font-weight: 950;
-      letter-spacing: -0.08em;
-    }
-
-    .brand-mark::after {
-      content: "";
-      position: absolute;
-      inset: -20%;
-      background: linear-gradient(100deg, transparent 35%, rgba(255,255,255,0.7), transparent 65%);
-      transform: translateX(-130%) rotate(16deg);
-      animation: shimmer 5s ease-in-out infinite;
-    }
-
-    .brand-text { min-width: 0; }
-
-    .brand-title {
-      display: block;
-      overflow: hidden;
-      max-width: 62vw;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: 1rem;
-      font-weight: 950;
-      letter-spacing: -0.04em;
-    }
-
-    .brand-subtitle {
-      display: block;
-      margin-top: 0.1rem;
-      color: var(--muted);
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.11em;
-      text-transform: uppercase;
-    }
-
-    .nav-actions {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-    }
-
-    .pill-link,
-    .menu-toggle,
-    .cta-button,
-    .ghost-button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.45rem;
-      min-height: 44px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      cursor: pointer;
-      transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .pill-link {
-      display: none;
-      padding: 0.68rem 1rem;
-      background: rgba(255,255,255,0.04);
-      color: #d8e7ff;
-      font-size: 0.88rem;
-      font-weight: 800;
-    }
-
-    .menu-toggle {
-      width: 48px;
-      background: rgba(255,255,255,0.055);
-      color: var(--text);
-    }
-
-    .menu-toggle:hover,
-    .pill-link:hover,
-    .ghost-button:hover {
-      transform: translateY(-1px);
-      border-color: rgba(88,246,255,0.55);
-      background: rgba(88,246,255,0.08);
-      box-shadow: 0 0 24px rgba(88,246,255,0.12);
-    }
-
-    .hamburger {
-      position: relative;
-      width: 20px;
-      height: 14px;
-    }
-
-    .hamburger span {
-      position: absolute;
-      left: 0;
-      width: 100%;
-      height: 2px;
-      border-radius: 999px;
-      background: currentColor;
-      transition: transform 0.2s ease, opacity 0.2s ease, top 0.2s ease;
-    }
-
-    .hamburger span:nth-child(1) { top: 0; }
-    .hamburger span:nth-child(2) { top: 6px; }
-    .hamburger span:nth-child(3) { top: 12px; }
-
-    .menu-toggle[aria-expanded="true"] .hamburger span:nth-child(1) { top: 6px; transform: rotate(45deg); }
-    .menu-toggle[aria-expanded="true"] .hamburger span:nth-child(2) { opacity: 0; }
-    .menu-toggle[aria-expanded="true"] .hamburger span:nth-child(3) { top: 6px; transform: rotate(-45deg); }
-
-    .drawer-overlay {
-      position: fixed;
-      inset: var(--nav-height) 0 0;
-      z-index: 900;
-      display: none;
-      background: rgba(0, 0, 0, 0.56);
-      backdrop-filter: blur(3px);
-    }
-
-    .drawer-overlay.active { display: block; }
-
-    .drawer {
-      position: fixed;
-      top: var(--nav-height);
-      right: 0;
-      z-index: 1001;
-      display: flex;
-      flex-direction: column;
-      width: min(100%, 420px);
-      height: calc(100dvh - var(--nav-height));
-      border-left: 1px solid var(--line);
-      background:
-        radial-gradient(circle at 20% 10%, rgba(88,246,255,0.16), transparent 18rem),
-        radial-gradient(circle at 90% 0%, rgba(255,79,216,0.16), transparent 16rem),
-        rgba(5, 8, 20, 0.96);
-      box-shadow: var(--shadow);
-      transform: translateX(105%);
-      transition: transform 0.28s cubic-bezier(.2,.9,.2,1);
-    }
-
-    .drawer.active { transform: translateX(0); }
-
-    .drawer-head {
-      flex: 0 0 auto;
-      padding: 1rem;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .drawer-kicker {
-      color: var(--cyan);
-      font-size: 0.72rem;
-      font-weight: 950;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-    }
-
-    .drawer-title {
-      margin: 0.35rem 0 0;
-      font-size: 1.35rem;
-      font-weight: 950;
-      letter-spacing: -0.04em;
-    }
-
-    .nav-search {
-      width: 100%;
-      margin-top: 0.9rem;
-      padding: 0.85rem 1rem;
-      border: 1px solid rgba(88,246,255,0.2);
-      border-radius: 16px;
-      outline: none;
-      background: rgba(0, 0, 0, 0.28);
-      color: var(--text);
-    }
-
-    .nav-search:focus {
-      border-color: rgba(88,246,255,0.75);
-      box-shadow: 0 0 0 4px rgba(88,246,255,0.11);
-    }
-
-    .drawer-scroll {
-      flex: 1 1 auto;
-      overflow-y: auto;
-      overscroll-behavior: contain;
-      padding: 0.85rem;
-      scrollbar-color: rgba(88,246,255,0.55) rgba(255,255,255,0.05);
-      scrollbar-width: thin;
-    }
-
-    .drawer-scroll::-webkit-scrollbar { width: 10px; }
-    .drawer-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
-    .drawer-scroll::-webkit-scrollbar-thumb {
-      border: 2px solid rgba(5, 8, 20, 0.96);
-      border-radius: 999px;
-      background: linear-gradient(var(--cyan), var(--pink));
-    }
-
-    .nav-group { margin-bottom: 1rem; }
-
-    .nav-group-title {
-      position: sticky;
-      top: -0.9rem;
-      z-index: 2;
-      margin: 0 0 0.5rem;
-      padding: 0.7rem 0.7rem 0.45rem;
-      background: linear-gradient(to bottom, rgba(5,8,20,0.98), rgba(5,8,20,0.82));
-      color: var(--amber);
-      font-size: 0.72rem;
-      font-weight: 950;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-    }
-
-    .nav-list {
-      display: grid;
-      gap: 0.45rem;
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-
-    .nav-list a {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      align-items: center;
-      gap: 0.75rem;
-      min-height: 54px;
-      padding: 0.75rem;
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 18px;
-      background: rgba(255,255,255,0.045);
-      transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-    }
-
-    .nav-list a:hover,
-    .nav-list a:focus-visible {
-      transform: translateX(-2px);
-      border-color: rgba(88,246,255,0.45);
-      background: rgba(88,246,255,0.08);
-      outline: none;
-    }
-
-    .nav-icon {
-      display: grid;
-      width: 36px;
-      height: 36px;
-      place-items: center;
-      border-radius: 14px;
-      background: rgba(88,246,255,0.11);
-      box-shadow: inset 0 0 20px rgba(88,246,255,0.08);
-    }
-
-    .nav-link-title {
-      display: block;
-      font-size: 0.95rem;
-      font-weight: 850;
-    }
-
-    .nav-link-desc {
-      display: block;
-      margin-top: 0.1rem;
-      color: var(--muted);
-      font-size: 0.76rem;
-    }
-
-    .nav-arrow { color: rgba(237,247,255,0.45); }
-
-    .drawer-foot {
-      flex: 0 0 auto;
-      padding: 0.85rem 1rem 1rem;
-      border-top: 1px solid var(--line);
-      color: var(--muted);
-      font-size: 0.78rem;
-    }
-
-    main { position: relative; }
-
-    .hero {
-      width: min(100% - 1.25rem, var(--max));
-      min-height: calc(100svh - var(--nav-height));
-      margin-inline: auto;
-      padding: clamp(2rem, 6vw, 6rem) 0 3rem;
-      display: grid;
-      align-items: center;
-      gap: 2rem;
-    }
-
-    .hero-panel {
-      position: relative;
-      overflow: hidden;
-      padding: clamp(1.25rem, 4vw, 3rem);
-      border: 1px solid var(--line);
-      border-radius: var(--radius-xl);
-      background:
-        linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025)),
-        var(--panel);
-      box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.12);
-    }
-
-    .hero-panel::before {
-      content: "";
-      position: absolute;
-      inset: -1px;
-      border-radius: inherit;
-      padding: 1px;
-      background: linear-gradient(135deg, rgba(88,246,255,0.65), transparent 30%, rgba(255,79,216,0.55), transparent 65%, rgba(255,209,102,0.5));
-      mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-      mask-composite: exclude;
-      pointer-events: none;
-    }
-
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      width: fit-content;
-      margin: 0 0 1rem;
-      padding: 0.45rem 0.75rem;
-      border: 1px solid rgba(88,246,255,0.28);
-      border-radius: 999px;
-      background: rgba(88,246,255,0.08);
-      color: var(--cyan);
-      font-size: 0.73rem;
-      font-weight: 950;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-    }
-
-    .pulse-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: var(--green);
-      box-shadow: 0 0 18px var(--green);
-      animation: pulse 1.8s ease-in-out infinite;
-    }
-
-    h1 {
-      max-width: 960px;
-      margin: 0;
-      font-size: clamp(3rem, 14vw, 8.7rem);
-      line-height: 0.84;
-      letter-spacing: -0.09em;
-      text-wrap: balance;
-    }
-
-    .gradient-text {
-      color: transparent;
-      background: linear-gradient(105deg, #ffffff 0%, var(--cyan) 34%, var(--pink) 68%, var(--amber) 100%);
-      background-clip: text;
-      -webkit-background-clip: text;
-      filter: drop-shadow(0 0 30px rgba(88,246,255,0.16));
-    }
-
-    .hero-copy {
-      max-width: 760px;
-      margin: 1.2rem 0 0;
-      color: #c3d3ed;
-      font-size: clamp(1rem, 2.4vw, 1.35rem);
-      line-height: 1.65;
-    }
-
-    .hero-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.8rem;
-      margin-top: 1.6rem;
-    }
-
-    .cta-button,
-    .ghost-button {
-      min-height: 50px;
-      padding: 0.85rem 1.1rem;
-      font-weight: 950;
-    }
-
-    .cta-button {
-      border-color: rgba(88,246,255,0.62);
-      background: linear-gradient(135deg, rgba(88,246,255,0.95), rgba(91,140,255,0.95));
-      color: #04101c;
-      box-shadow: 0 0 36px rgba(88,246,255,0.25);
-    }
-
-    .cta-button:hover { transform: translateY(-2px) scale(1.01); }
-
-    .ghost-button {
-      background: rgba(255,255,255,0.05);
-      color: var(--text);
-    }
-
-    .hero-stats {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.75rem;
-      margin-top: 1.7rem;
-    }
-
-    .stat-card {
-      min-height: 104px;
-      padding: 1rem;
-      border: 1px solid rgba(255,255,255,0.09);
-      border-radius: var(--radius-lg);
-      background: rgba(0,0,0,0.22);
-    }
-
-    .stat-value {
-      display: block;
-      color: var(--amber);
-      font-size: clamp(1.55rem, 6vw, 2.5rem);
-      font-weight: 950;
-      letter-spacing: -0.06em;
-    }
-
-    .stat-label {
-      display: block;
-      margin-top: 0.25rem;
-      color: var(--muted);
-      font-size: 0.82rem;
-      line-height: 1.35;
-    }
-
-    .section {
-      width: min(100% - 1.25rem, var(--max));
-      margin-inline: auto;
-      padding: 3.5rem 0;
-    }
-
-    .section-heading {
-      display: flex;
-      flex-direction: column;
-      gap: 0.8rem;
-      margin-bottom: 1.35rem;
-    }
-
-    .section-heading h2 {
-      margin: 0;
-      font-size: clamp(2rem, 7vw, 4.3rem);
-      line-height: 0.95;
-      letter-spacing: -0.065em;
-    }
-
-    .section-heading p {
-      max-width: 740px;
-      margin: 0;
-      color: var(--muted);
-      font-size: 1rem;
-      line-height: 1.7;
-    }
-
-    .module-grid {
-      display: grid;
-      gap: 1rem;
-    }
-
-    .module-card {
-      position: relative;
-      overflow: hidden;
-      min-height: 230px;
-      padding: 1.25rem;
-      border: 1px solid rgba(255,255,255,0.09);
-      border-radius: var(--radius-xl);
-      background:
-        radial-gradient(circle at top right, rgba(88,246,255,0.13), transparent 15rem),
-        rgba(255,255,255,0.045);
-      box-shadow: 0 18px 60px rgba(0,0,0,0.25);
-      transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
-    }
-
-    .module-card:hover {
-      transform: translateY(-5px);
-      border-color: rgba(88,246,255,0.38);
-      background:
-        radial-gradient(circle at top right, rgba(255,79,216,0.13), transparent 15rem),
-        rgba(255,255,255,0.065);
-    }
-
-    .module-tag {
-      display: inline-flex;
-      margin-bottom: 1rem;
-      padding: 0.35rem 0.6rem;
-      border-radius: 999px;
-      background: rgba(255,209,102,0.1);
-      color: var(--amber);
-      font-size: 0.72rem;
-      font-weight: 950;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-    }
-
-    .module-card h3 {
-      margin: 0 0 0.65rem;
-      font-size: 1.35rem;
-      letter-spacing: -0.035em;
-    }
-
-    .module-card p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.65;
-    }
-
-    .module-card a {
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-    }
-
-    .module-card .open-label {
-      position: absolute;
-      right: 1.1rem;
-      bottom: 1rem;
-      color: rgba(237,247,255,0.6);
-      font-size: 0.85rem;
-      font-weight: 850;
-    }
-
-    .signal-strip {
-      display: grid;
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-
-    .signal-card {
-      padding: 1rem;
-      border: 1px solid rgba(88,246,255,0.14);
-      border-radius: 22px;
-      background: rgba(0,0,0,0.24);
-    }
-
-    .signal-card strong {
-      display: block;
-      margin-bottom: 0.35rem;
-      color: #eafaff;
-    }
-
-    .signal-card span {
-      color: var(--muted);
-      line-height: 1.6;
-    }
-
-    .footer {
-      margin-top: 2rem;
-      border-top: 1px solid var(--line);
-      background: rgba(0,0,0,0.26);
-    }
-
-    .footer-inner {
-      width: min(100% - 1.25rem, var(--max));
-      margin-inline: auto;
-      padding: 2.5rem 0;
-    }
-
-    .footer-top {
-      display: grid;
-      gap: 1rem;
-    }
-
-    .footer-brand h2 {
-      margin: 0;
-      font-size: clamp(1.8rem, 7vw, 3.5rem);
-      line-height: 0.95;
-      letter-spacing: -0.07em;
-    }
-
-    .footer-brand p {
-      max-width: 620px;
-      color: var(--muted);
-      line-height: 1.7;
-    }
-
-    .social-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.75rem;
-      margin-top: 1.25rem;
-    }
-
-    .social-link {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      min-height: 58px;
-      padding: 0.8rem 0.9rem;
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 18px;
-      background: rgba(255,255,255,0.045);
-      color: #dcecff;
-      font-weight: 850;
-      transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-    }
-
-    .social-link:hover {
-      transform: translateY(-2px);
-      border-color: rgba(255,79,216,0.42);
-      background: rgba(255,79,216,0.08);
-    }
-
-    .footer-bottom {
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-      margin-top: 2rem;
-      padding-top: 1.2rem;
-      border-top: 1px solid rgba(255,255,255,0.08);
-      color: var(--muted);
-      font-size: 0.82rem;
-    }
-
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
-
-    @keyframes shimmer {
-      0%, 60% { transform: translateX(-130%) rotate(16deg); }
-      82%, 100% { transform: translateX(130%) rotate(16deg); }
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 0.8; }
-      50% { transform: scale(1.35); opacity: 1; }
-    }
-
-    @media (min-width: 680px) {
-      .hero-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-      .module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .signal-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .social-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .footer-bottom { flex-direction: row; justify-content: space-between; }
-    }
-
-    @media (min-width: 980px) {
-      .pill-link { display: inline-flex; }
-      .hero { padding-top: 4rem; }
-      .hero-panel { min-height: 650px; display: flex; flex-direction: column; justify-content: center; }
-      .module-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-      .module-card.featured { grid-column: span 2; }
-      .footer-top { grid-template-columns: 1fr 1fr; align-items: end; }
-      .social-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        scroll-behavior: auto !important;
-        transition-duration: 0.01ms !important;
-      }
-    }
-  </style>
-</head>
-
-<body>
-  <a class="skip-link" href="#main">Skip to main content</a>
-  <div class="noise" aria-hidden="true"></div>
-  <div class="scanlines" aria-hidden="true"></div>
-  <div class="grid-glow" aria-hidden="true"></div>
-
-  <header class="site-header">
-    <div class="nav-shell">
-      <a class="brand" href="index.html" aria-label="Aurora Command home">
-        <span class="brand-mark">A</span>
-        <span class="brand-text">
-          <span class="brand-title">Aurora Command</span>
-          <span class="brand-subtitle">Experimental Web Cockpit</span>
-        </span>
-      </a>
-
-      <div class="nav-actions">
-        <a class="pill-link" href="projects.html">Projects</a>
-        <a class="pill-link" href="contact.html">Contact</a>
-        <button class="menu-toggle" id="menuToggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="siteDrawer">
-          <span class="hamburger" aria-hidden="true"><span></span><span></span><span></span></span>
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <div class="drawer-overlay" id="drawerOverlay" hidden></div>
-
-  <aside class="drawer" id="siteDrawer" aria-label="Main navigation drawer" aria-hidden="true">
-    <div class="drawer-head">
-      <div class="drawer-kicker">Navigation Matrix</div>
-      <h2 class="drawer-title">Choose a module</h2>
-      <label class="sr-only" for="navSearch">Filter navigation links</label>
-      <input class="nav-search" id="navSearch" type="search" placeholder="Search pages, labs, tools..." autocomplete="off" />
-    </div>
-
-    <nav class="drawer-scroll" aria-label="Primary pages">
-      <section class="nav-group" aria-labelledby="coreNavTitle">
-        <h3 class="nav-group-title" id="coreNavTitle">Core</h3>
-        <ul class="nav-list">
-          <li><a href="index.html"><span class="nav-icon">🏠</span><span><span class="nav-link-title">Home</span><span class="nav-link-desc">Landing page and overview</span></span><span class="nav-arrow">↗</span></a></li>
-          <li><a href="projects.html"><span class="nav-icon">🧭</span><span><span class="nav-link-title">Projects Index</span><span class="nav-link-desc">All public and private experiments</span></span><span class="nav-arrow">↗</span></a></li>
-          <li><a href="terence.html"><span class="nav-icon">👤</span><span><span class="nav-link-title">Terence Lewis</span><span class="nav-link-desc">Profile, notes, mission</span></span><span class="nav-arrow">↗</span></a></li>
-          <li><a href="contact.html"><span class="nav-icon">📡</span><span><span class="nav-link-title">Contact</span><span class="nav-link-desc">Email, social, updates</span></span><span class="nav-arrow">↗</span></a></li>
-        </ul>
-      </section>
-
-      <section class="nav-group" aria-labelledby="systemsNavTitle">
-        <h3 class="nav-group-title" id="systemsNavTitle">Systems</h3>
-        <ul class="nav-list">
-          <li><a href="software.html"><span class="nav-icon">🖥️</span><span><span class="nav-link-title">Software LTD</span><span class="nav-link-desc">Logistics and dashboards</span></span><span class="nav-arrow">↗</span></a></li>
-          <li><a href="land-energy.html"><span class="nav-icon">🌱</span><span><span class="nav-link-title">Land & Energy UAB</span><span class="nav-link-desc">Green land and energy assets</span></span><span class="nav-arrow">↗</span></a></li>
-          <li><a href="oversight.html"><span class="nav-icon">🛡️</span><span><span class="nav-link-title">Oversight</span><span class="nav-link-desc">Governance and safety states</span></span><span class="nav-arrow">↗</span></a></li>
-          <li><a href="widgets.html"><span class="nav-icon">🧩</span><span><span class="nav-link-title">Widgets Hub</span><span class="nav-link-desc">Useful tools and live panels</span></span><span class="nav-arrow">↗</span></a></li>
-        </ul>
-      </section>
-
-      <section class="nav-group" aria-labelledby="labsNavTitle">
-        <h3 class="nav-group-title" id="labsNavTitle">Labs</h3>
-        <ul class="nav-list">
-          <li><a href="metacomputer.html"><span class="nav-icon">🔥</span><span><span class="nav-link-title">Meta-Computer</span><span class="nav-link-desc">VMs, sandboxes, embedded tools</span></span><span class="nav-arrow">↗</span></a></li>
-          <li><a href="control-spine.html"><span class="nav-icon">🎮</span><span><span class="nav-link-title">Control Spine</span><span class="nav-link-desc">Simulation and command layer</span></span><span class="nav-arrow">↗</span></a></li>
-          <li><a href="harness-core.html"><span class="nav-icon">🔐</span><span><span class="nav-link-title">Harness Core</span><span class="nav-link-desc">Bridge status and safety controls</span></span><span class="nav-arrow">↗</span></a></li>
-          <li><a href="flipper.html"><span class="nav-icon">🐬</span><span><span class="nav-link-title">Real Flipper</span><span class="nav-link-desc">Device bridge interface</span></span><span class="nav-arrow">↗</span></a></li>
-          <li><a href="mining.html"><span class="nav-icon">⛏️</span><span><span class="nav-link-title">Mining Lab</span><span class="nav-link-desc">Real vs harmonic experiments</span></span><span class="nav-arrow">↗</span></a></li>
-          <li><a href="fluid-lab.html"><span class="nav-icon">🧠</span><span><span class="nav-link-title">Fluid Lab</span><span class="nav-link-desc">Actions, relays, self-modifying config</span></span><span class="nav-arrow">↗</span></a></li>
-          <li><a href="vscodenest.html"><span class="nav-icon">💻</span><span><span class="nav-link-title">VS Code Nest</span><span class="nav-link-desc">Web IDE launcher</span></span><span class="nav-arrow">↗</span></a></li>
-          <li><a href="ai-settings.html"><span class="nav-icon">🤖</span><span><span class="nav-link-title">AI Settings</span><span class="nav-link-desc">Assistant bridge configuration</span></span><span class="nav-arrow">↗</span></a></li>
-        </ul>
-      </section>
-
-      <section class="nav-group" aria-labelledby="mediaNavTitle">
-        <h3 class="nav-group-title" id="mediaNavTitle">Media & Channels</h3>
-        <ul class="nav-list">
-          <li><a href="movies.html"><span class="nav-icon">🎬</span><span><span class="nav-link-title">Movies</span><span class="nav-link-desc">Public-domain cinema room</span></span><span class="nav-arrow">↗</span></a></li>
-          <li><a href="blog.html"><span class="nav-icon">✍️</span><span><span class="nav-link-title">Blog</span><span class="nav-link-desc">Long-form project updates</span></span><span class="nav-arrow">↗</span></a></li>
-          <li><a href="vlog.html"><span class="nav-icon">📹</span><span><span class="nav-link-title">Vlog</span><span class="nav-link-desc">Video build logs</span></span><span class="nav-arrow">↗</span></a></li>
-          <li><a href="livestream.html"><span class="nav-icon">🔴</span><span><span class="nav-link-title">Live Stream</span><span class="nav-link-desc">Broadcast and demos</span></span><span class="nav-arrow">↗</span></a></li>
-          <li><a href="archive.html"><span class="nav-icon">🗄️</span><span><span class="nav-link-title">Archive</span><span class="nav-link-desc">Stored prototypes and snapshots</span></span><span class="nav-arrow">↗</span></a></li>
-        </ul>
-      </section>
-    </nav>
-
-    <div class="drawer-foot">
-      Scrollable drawer ready for many more pages. Add links without breaking mobile navigation. What a concept.
-    </div>
-  </aside>
-
-  <main id="main">
-    <section class="hero" aria-labelledby="heroTitle">
-      <div class="hero-panel">
-        <p class="eyebrow"><span class="pulse-dot" aria-hidden="true"></span> Private prototype system now entering static-page mode</p>
-        <h1 id="heroTitle"><span class="gradient-text">One landing page.</span><br />Many experimental worlds.</h1>
-        <p class="hero-copy">
-          Aurora Command is the front door for a growing repository of HTML modules: software dashboards, energy systems, device bridges, mining experiments, media pages, and AI settings. Each page stays separate. The navigation connects everything. Finally, a sensible hallway instead of a single haunted mansion file.
-        </p>
-        <div class="hero-actions">
-          <a class="cta-button" href="projects.html">Enter Project Index →</a>
-          <a class="ghost-button" href="#modules">View Modules</a>
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  Activity,
+  Bot,
+  Code2,
+  Cpu,
+  Film,
+  Gauge,
+  Globe2,
+  Home,
+  Layers3,
+  Map,
+  Menu,
+  Power,
+  RadioTower,
+  Shield,
+  TerminalSquare,
+  X,
+  Zap,
+} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+
+const APP_NAME = "Aurora Command";
+
+const routes = [
+  { id: "home", label: "Home", icon: Home },
+  { id: "software", label: "Software", icon: Layers3 },
+  { id: "land", label: "Land & Energy", icon: Map },
+  { id: "oversight", label: "Oversight", icon: Shield },
+  { id: "metacomp", label: "Meta-Computer", icon: Cpu },
+  { id: "control", label: "Control Spine", icon: Gauge },
+  { id: "flipper", label: "Real Flipper", icon: RadioTower },
+  { id: "mining", label: "Mining Lab", icon: Zap },
+  { id: "movies", label: "Movies", icon: Film },
+  { id: "widgets", label: "Widgets", icon: Activity },
+  { id: "vscode", label: "VS Code Nest", icon: Code2 },
+  { id: "ai", label: "AI Settings", icon: Bot },
+];
+
+const vmTools = {
+  Alpine: "https://copy.sh/v86/?profile=alpine",
+  Debian: "https://webvm.io/?autostart=true",
+  FreeDOS: "https://copy.sh/v86/?profile=freedos",
+  Jupyter: "https://jupyterlite.github.io/demo/repl/index.html?kernel=python&toolbar=1",
+  StackBlitz: "https://stackblitz.com/edit/web-platform?embed=1&file=index.html",
+};
+
+const movies = [
+  ["Night of the Living Dead", "1968 • Horror • Public Domain"],
+  ["His Girl Friday", "1940 • Comedy • Public Domain"],
+  ["Detour", "1945 • Film Noir • Public Domain"],
+  ["The General", "1926 • Comedy/Action • Public Domain"],
+];
+
+function cx(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
+
+function useLocalStorage(key, fallback) {
+  const [value, setValue] = useState(() => {
+    try {
+      const stored = window.localStorage.getItem(key);
+      return stored ? JSON.parse(stored) : fallback;
+    } catch {
+      return fallback;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      // Storage can fail in private windows or locked-down webviews.
+    }
+  }, [key, value]);
+
+  return [value, setValue];
+}
+
+function StatusDot({ status = "offline" }) {
+  const color = status === "online" ? "bg-emerald-400 shadow-emerald-400" : status === "warn" ? "bg-amber-400 shadow-amber-400" : "bg-rose-400 shadow-rose-400";
+  return <span className={cx("inline-block h-3 w-3 rounded-full shadow", color)} />;
+}
+
+function Shell({ page, setPage, children }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="min-h-screen bg-[#050914] text-slate-100">
+      <header className="sticky top-0 z-50 border-b border-amber-300/15 bg-slate-950/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
+          <button onClick={() => setPage("home")} className="flex items-center gap-2 text-left">
+            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-amber-300 to-sky-400 text-slate-950 shadow-lg shadow-amber-500/10">
+              <Globe2 className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="text-lg font-black tracking-tight">{APP_NAME}</div>
+              <div className="text-xs text-slate-400">Production web cockpit</div>
+            </div>
+          </button>
+
+          <nav className="hidden items-center gap-1 lg:flex">
+            {routes.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setPage(id)}
+                className={cx(
+                  "flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-slate-300 transition hover:bg-white/5 hover:text-amber-200",
+                  page === id && "bg-amber-300/10 text-amber-200"
+                )}
+              >
+                <Icon className="h-4 w-4" /> {label}
+              </button>
+            ))}
+          </nav>
+
+          <Button variant="outline" className="border-amber-300/30 bg-transparent lg:hidden" onClick={() => setOpen(true)}>
+            <Menu className="h-4 w-4" />
+          </Button>
         </div>
+      </header>
 
-        <div class="hero-stats" aria-label="Project summary">
-          <div class="stat-card"><span class="stat-value">20+</span><span class="stat-label">HTML modules ready to split into pages</span></div>
-          <div class="stat-card"><span class="stat-value">1</span><span class="stat-label">Shared navigation system across the repo</span></div>
-          <div class="stat-card"><span class="stat-value">100%</span><span class="stat-label">Static-host friendly for GitHub Pages</span></div>
-          <div class="stat-card"><span class="stat-value">∞</span><span class="stat-label">Room for experiments, because restraint left the building</span></div>
+      {open && (
+        <div className="fixed inset-0 z-50 bg-black/70 lg:hidden" onClick={() => setOpen(false)}>
+          <motion.div initial={{ x: -320 }} animate={{ x: 0 }} className="h-full w-80 bg-slate-950 p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <strong>{APP_NAME}</strong>
+              <Button variant="ghost" onClick={() => setOpen(false)}><X className="h-4 w-4" /></Button>
+            </div>
+            <div className="grid gap-1">
+              {routes.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => { setPage(id); setOpen(false); }}
+                  className={cx("flex items-center gap-3 rounded-xl px-3 py-3 text-left text-slate-300", page === id && "bg-amber-300/10 text-amber-200")}
+                >
+                  <Icon className="h-4 w-4" /> {label}
+                </button>
+              ))}
+            </div>
+          </motion.div>
         </div>
-      </div>
-    </section>
+      )}
 
-    <section class="section" id="modules" aria-labelledby="modulesTitle">
-      <div class="section-heading">
-        <h2 id="modulesTitle">Launch modules</h2>
-        <p>These cards are the first visible map of the repository. Each one can become its own HTML file with the same header and drawer navigation.</p>
-      </div>
-
-      <div class="module-grid">
-        <article class="module-card featured">
-          <span class="module-tag">Core System</span>
-          <h3>Projects Index</h3>
-          <p>The master list for every HTML page, prototype, lab, and active experiment in the repository.</p>
-          <span class="open-label">Open →</span>
-          <a href="projects.html" aria-label="Open Projects Index"></a>
-        </article>
-        <article class="module-card">
-          <span class="module-tag">Lab</span>
-          <h3>Meta-Computer</h3>
-          <p>VM launchers, browser sandboxes, code tools, and controlled embeds.</p>
-          <span class="open-label">Open →</span>
-          <a href="metacomputer.html" aria-label="Open Meta-Computer"></a>
-        </article>
-        <article class="module-card">
-          <span class="module-tag">Device</span>
-          <h3>Real Flipper</h3>
-          <p>Interface for bridge-controlled device workflows and command logs.</p>
-          <span class="open-label">Open →</span>
-          <a href="flipper.html" aria-label="Open Real Flipper"></a>
-        </article>
-        <article class="module-card">
-          <span class="module-tag">Energy</span>
-          <h3>Land & Energy</h3>
-          <p>Maps, land concepts, solar/wind planning, and ecological operations.</p>
-          <span class="open-label">Open →</span>
-          <a href="land-energy.html" aria-label="Open Land and Energy"></a>
-        </article>
-        <article class="module-card">
-          <span class="module-tag">Compute</span>
-          <h3>Mining Lab</h3>
-          <p>Experimental real-versus-harmonic mining control and reporting page.</p>
-          <span class="open-label">Open →</span>
-          <a href="mining.html" aria-label="Open Mining Lab"></a>
-        </article>
-        <article class="module-card featured">
-          <span class="module-tag">AI</span>
-          <h3>AI Settings</h3>
-          <p>Browser-side assistant settings for local development, later replaceable with backend-controlled configuration.</p>
-          <span class="open-label">Open →</span>
-          <a href="ai-settings.html" aria-label="Open AI Settings"></a>
-        </article>
-      </div>
-
-      <div class="signal-strip" aria-label="Architecture notes">
-        <div class="signal-card"><strong>Mobile-first</strong><span>The drawer is designed for long navigation lists and scrolls independently from the page.</span></div>
-        <div class="signal-card"><strong>Static-ready</strong><span>No build step required. Drop into GitHub Pages, then add the child HTML files.</span></div>
-        <div class="signal-card"><strong>Reusable</strong><span>Copy the header/drawer block into each page, or later convert it to a generated include.</span></div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="footer" aria-labelledby="socialTitle">
-    <div class="footer-inner">
-      <div class="footer-top">
-        <div class="footer-brand">
-          <h2 id="socialTitle">Follow the signal.</h2>
-          <p>Social channels sit here so visitors can follow updates, builds, streams, and posts without spelunking through a private repo like digital archaeologists in cheap boots.</p>
-        </div>
-
-        <div class="social-grid" aria-label="Social media links">
-          <a class="social-link" href="https://github.com/AOL83" target="_blank" rel="noopener noreferrer"><span>GitHub</span><span>↗</span></a>
-          <a class="social-link" href="#" target="_blank" rel="noopener noreferrer"><span>YouTube</span><span>↗</span></a>
-          <a class="social-link" href="#" target="_blank" rel="noopener noreferrer"><span>Instagram</span><span>↗</span></a>
-          <a class="social-link" href="#" target="_blank" rel="noopener noreferrer"><span>TikTok</span><span>↗</span></a>
-          <a class="social-link" href="#" target="_blank" rel="noopener noreferrer"><span>Substack</span><span>↗</span></a>
-          <a class="social-link" href="#" target="_blank" rel="noopener noreferrer"><span>Facebook</span><span>↗</span></a>
-        </div>
-      </div>
-
-      <div class="footer-bottom">
-        <span>© <span id="year"></span> Aurora Command / Terence Lewis</span>
-        <span>Static multi-page architecture. Neon included. Chaos mildly supervised.</span>
-      </div>
+      <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
     </div>
-  </footer>
+  );
+}
 
-  <script>
-    const menuToggle = document.getElementById('menuToggle');
-    const drawer = document.getElementById('siteDrawer');
-    const overlay = document.getElementById('drawerOverlay');
-    const navSearch = document.getElementById('navSearch');
-    const navLinks = Array.from(drawer.querySelectorAll('.nav-list li'));
-    const year = document.getElementById('year');
+function SectionTitle({ eyebrow, title, children }) {
+  return (
+    <div className="mb-6">
+      <div className="mb-2 text-sm font-semibold uppercase tracking-[0.25em] text-amber-300/80">{eyebrow}</div>
+      <h1 className="text-3xl font-black tracking-tight md:text-5xl">{title}</h1>
+      {children && <p className="mt-3 max-w-3xl text-slate-400">{children}</p>}
+    </div>
+  );
+}
 
-    year.textContent = new Date().getFullYear();
+function Tile({ title, children, accent = "amber" }) {
+  const border = accent === "sky" ? "border-sky-300/20" : accent === "green" ? "border-emerald-300/20" : "border-amber-300/20";
+  return (
+    <Card className={cx("rounded-3xl border bg-slate-900/70 text-slate-100 shadow-2xl shadow-black/20", border)}>
+      <CardContent className="p-6">
+        <h3 className="mb-2 text-xl font-bold">{title}</h3>
+        <div className="text-sm leading-6 text-slate-300">{children}</div>
+      </CardContent>
+    </Card>
+  );
+}
 
-    function setMenu(open) {
-      document.body.classList.toggle('nav-open', open);
-      drawer.classList.toggle('active', open);
-      overlay.classList.toggle('active', open);
-      overlay.hidden = !open;
-      drawer.setAttribute('aria-hidden', String(!open));
-      menuToggle.setAttribute('aria-expanded', String(open));
-      menuToggle.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
-      if (open) {
-        window.setTimeout(() => navSearch.focus(), 160);
-      } else {
-        menuToggle.focus();
-      }
+function HomePage() {
+  return (
+    <>
+      <SectionTitle eyebrow="Unified dashboard" title="Aurora Eco Holdings command center">
+        A production-ready rebuild of the original all-in-one HTML prototype: separated pages, controlled embeds, safer settings, and a cleaner interaction model.
+      </SectionTitle>
+      <div className="grid gap-4 md:grid-cols-3">
+        <Tile title="Carbon-neutral logistics" accent="sky">AI route planning, emissions reporting, and operational dashboards belong here as isolated modules.</Tile>
+        <Tile title="Land & energy" accent="green">Land acquisition, solar/wind assets, maps, and green infrastructure workflows live in their own page.</Tile>
+        <Tile title="Oversight layer">Governance, safety states, audit logs, and operating rules are centralized instead of scattered through global scripts.</Tile>
+      </div>
+    </>
+  );
+}
+
+function SoftwarePage() {
+  return (
+    <>
+      <SectionTitle eyebrow="Software LTD" title="Logistics software suite" />
+      <div className="grid gap-4 md:grid-cols-2">
+        <Tile title="Route optimization" accent="sky">Connect real APIs through backend services, not directly from public browser JavaScript.</Tile>
+        <Tile title="Carbon dashboard" accent="green"><Metric label="Estimated CO₂ per route" value={`${(Math.random() * 0.5 + 0.3).toFixed(2)} kg`} /></Tile>
+      </div>
+    </>
+  );
+}
+
+function LandPage() {
+  return (
+    <>
+      <SectionTitle eyebrow="Land & Energy UAB" title="Green infrastructure portfolio" />
+      <Tile title="Map module" accent="green">
+        Replace this card with a lazy-loaded Leaflet/MapLibre component. The original code loaded map libraries globally; production code should load mapping only on this route.
+      </Tile>
+    </>
+  );
+}
+
+function OversightPage() {
+  return (
+    <>
+      <SectionTitle eyebrow="Governance" title="Oversight and audit spine" />
+      <div className="grid gap-4 md:grid-cols-3">
+        <Tile title="Safety state"><StatusDot status="warn" /> <span className="ml-2">Simulation mode</span></Tile>
+        <Tile title="Audit trail">All hardware and workflow actions should be logged server-side with actor, timestamp, and result.</Tile>
+        <Tile title="Secrets policy">No GitHub tokens, device credentials, or private bridge addresses inside static HTML. Revolutionary, apparently.</Tile>
+      </div>
+    </>
+  );
+}
+
+function EmbedFrame({ src, title }) {
+  const [blocked, setBlocked] = useState(false);
+  return (
+    <div className="overflow-hidden rounded-3xl border border-emerald-300/20 bg-black">
+      {blocked ? (
+        <div className="grid h-[60vh] place-items-center p-8 text-center text-slate-400">This site likely blocks iframe embedding. Open it externally or host a permitted code-server.</div>
+      ) : (
+        <iframe
+          title={title}
+          src={src}
+          className="h-[60vh] w-full border-0"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+          onError={() => setBlocked(true)}
+        />
+      )}
+    </div>
+  );
+}
+
+function MetaComputerPage() {
+  const [tool, setTool] = useState("Alpine");
+  return (
+    <>
+      <SectionTitle eyebrow="Meta-computer" title="Browser VM launcher" />
+      <div className="mb-4 flex flex-wrap gap-2">
+        {Object.keys(vmTools).map((name) => <Button key={name} variant={tool === name ? "default" : "outline"} onClick={() => setTool(name)}>{name}</Button>)}
+      </div>
+      <EmbedFrame title={tool} src={vmTools[tool]} />
+    </>
+  );
+}
+
+function ControlPage() {
+  const [armed, setArmed] = useState(false);
+  const [log, setLog] = useState(["Simulation ready"]);
+  const push = (msg) => setLog((l) => [`${new Date().toLocaleTimeString()} ${msg}`, ...l].slice(0, 50));
+
+  return (
+    <>
+      <SectionTitle eyebrow="Control spine" title="Guarded hardware control" />
+      <div className="grid gap-4 lg:grid-cols-[1fr_2fr]">
+        <Tile title="Safety controls">
+          <div className="mb-4 flex items-center gap-2"><StatusDot status={armed ? "online" : "offline"} /> {armed ? "Armed" : "Disarmed"}</div>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => { setArmed(true); push("ARMED"); }} className="bg-emerald-500 text-slate-950 hover:bg-emerald-400"><Power className="mr-2 h-4 w-4" /> Arm</Button>
+            <Button variant="secondary" onClick={() => { setArmed(false); push("DISARMED"); }}>Disarm</Button>
+            <Button variant="destructive" onClick={() => { setArmed(false); push("ESTOP"); }}>ESTOP</Button>
+          </div>
+        </Tile>
+        <Tile title="Command log"><Log lines={log} /></Tile>
+      </div>
+    </>
+  );
+}
+
+function FlipperPage() {
+  return (
+    <>
+      <SectionTitle eyebrow="Real Flipper" title="Device bridge interface" />
+      <BridgePanel name="Flipper bridge" defaultUrl="ws://127.0.0.1:8768" />
+    </>
+  );
+}
+
+function MiningPage() {
+  const [running, setRunning] = useState(false);
+  const [hashes, setHashes] = useState(0);
+  useEffect(() => {
+    if (!running) return;
+    const id = window.setInterval(() => setHashes((h) => h + Math.floor(Math.random() * 9000)), 1000);
+    return () => window.clearInterval(id);
+  }, [running]);
+
+  return (
+    <>
+      <SectionTitle eyebrow="Mining Lab" title="Real vs harmonic mining experiment" />
+      <div className="grid gap-4 md:grid-cols-3">
+        <Tile title="Miner state"><StatusDot status={running ? "online" : "offline"} /> <span className="ml-2">{running ? "Running" : "Idle"}</span></Tile>
+        <Tile title="Total hashes"><Metric label="Demo counter" value={hashes.toLocaleString()} /></Tile>
+        <Tile title="Actions"><Button onClick={() => setRunning((v) => !v)}>{running ? "Stop" : "Start"} miner</Button></Tile>
+      </div>
+    </>
+  );
+}
+
+function MoviesPage() {
+  return (
+    <>
+      <SectionTitle eyebrow="Media" title="Public-domain movie library" />
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {movies.map(([title, meta]) => <Tile key={title} title={title}><p>{meta}</p><div className="mt-4 aspect-video rounded-2xl bg-black/70" /></Tile>)}
+      </div>
+    </>
+  );
+}
+
+function WidgetsPage() {
+  return (
+    <>
+      <SectionTitle eyebrow="Widgets" title="Operational widgets hub" />
+      <div className="grid gap-4 md:grid-cols-3">
+        <Tile title="System health"><Metric label="Frontend" value="OK" /></Tile>
+        <Tile title="Bridge status"><StatusDot status="offline" /> <span className="ml-2">No bridge connected</span></Tile>
+        <Tile title="Next step">Move each widget into a lazy-loaded component with explicit data contracts.</Tile>
+      </div>
+    </>
+  );
+}
+
+function VscodePage() {
+  const [url, setUrl] = useLocalStorage("aurora:vscode-url", "https://stackblitz.com/edit/web-platform?embed=1&file=index.html");
+  const [activeUrl, setActiveUrl] = useState(url);
+  return (
+    <>
+      <SectionTitle eyebrow="Developer nest" title="VS Code web launcher" />
+      <div className="mb-4 flex flex-wrap gap-2">
+        <input value={url} onChange={(e) => setUrl(e.target.value)} className="min-w-[320px] flex-1 rounded-xl border border-slate-700 bg-slate-950 px-4 py-2 text-slate-100" />
+        <Button onClick={() => setActiveUrl(url)}>Launch</Button>
+      </div>
+      <EmbedFrame title="VS Code Environment" src={activeUrl} />
+    </>
+  );
+}
+
+function AiSettingsPage() {
+  const [settings, setSettings] = useLocalStorage("aurora:ai-settings", { host: "127.0.0.1", port: "8768", reconnect: true });
+  return (
+    <>
+      <SectionTitle eyebrow="AI Settings" title="Assistant bridge settings" />
+      <Tile title="Connection settings">
+        <div className="grid gap-3 md:grid-cols-3">
+          <label className="grid gap-1">Host<input className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" value={settings.host} onChange={(e) => setSettings({ ...settings, host: e.target.value })} /></label>
+          <label className="grid gap-1">Port<input className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" value={settings.port} onChange={(e) => setSettings({ ...settings, port: e.target.value })} /></label>
+          <label className="flex items-end gap-2 pb-3"><input type="checkbox" checked={settings.reconnect} onChange={(e) => setSettings({ ...settings, reconnect: e.target.checked })} /> Auto reconnect</label>
+        </div>
+        <p className="mt-4 text-slate-400">Production rule: route AI traffic through a backend. Browser-side local bridge access is fine for development, not public deployment.</p>
+      </Tile>
+    </>
+  );
+}
+
+function BridgePanel({ name, defaultUrl }) {
+  const [url, setUrl] = useLocalStorage(`aurora:${name}:url`, defaultUrl);
+  const [status, setStatus] = useState("offline");
+  const [log, setLog] = useState(["Bridge not connected"]);
+  const socketRef = useRef(null);
+
+  const connect = () => {
+    try {
+      socketRef.current?.close?.();
+      const ws = new WebSocket(url);
+      socketRef.current = ws;
+      ws.onopen = () => { setStatus("online"); setLog((l) => [`${new Date().toLocaleTimeString()} connected`, ...l]); };
+      ws.onclose = () => { setStatus("offline"); setLog((l) => [`${new Date().toLocaleTimeString()} disconnected`, ...l]); };
+      ws.onerror = () => { setStatus("warn"); setLog((l) => [`${new Date().toLocaleTimeString()} connection error`, ...l]); };
+      ws.onmessage = (event) => setLog((l) => [`${new Date().toLocaleTimeString()} ${String(event.data)}`, ...l].slice(0, 50));
+    } catch (error) {
+      setStatus("warn");
+      setLog((l) => [`${new Date().toLocaleTimeString()} ${error.message}`, ...l]);
     }
+  };
 
-    menuToggle.addEventListener('click', () => {
-      setMenu(menuToggle.getAttribute('aria-expanded') !== 'true');
-    });
+  useEffect(() => () => socketRef.current?.close?.(), []);
 
-    overlay.addEventListener('click', () => setMenu(false));
+  return (
+    <div className="grid gap-4 lg:grid-cols-[1fr_2fr]">
+      <Tile title={name}>
+        <div className="mb-4 flex items-center gap-2"><StatusDot status={status} /> {status}</div>
+        <input value={url} onChange={(e) => setUrl(e.target.value)} className="mb-3 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" />
+        <Button onClick={connect}>Connect</Button>
+      </Tile>
+      <Tile title="Bridge log"><Log lines={log} /></Tile>
+    </div>
+  );
+}
 
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && menuToggle.getAttribute('aria-expanded') === 'true') {
-        setMenu(false);
-      }
-    });
+function Metric({ label, value }) {
+  return <div><div className="text-xs uppercase tracking-widest text-slate-500">{label}</div><div className="mt-1 text-3xl font-black text-amber-200">{value}</div></div>;
+}
 
-    drawer.addEventListener('click', (event) => {
-      const link = event.target.closest('a');
-      if (link) setMenu(false);
-    });
+function Log({ lines }) {
+  return <div className="h-64 overflow-auto rounded-2xl border border-emerald-300/20 bg-black p-4 font-mono text-xs text-emerald-300">{lines.map((line, index) => <div key={`${line}-${index}`}>{line}</div>)}</div>;
+}
 
-    navSearch.addEventListener('input', () => {
-      const query = navSearch.value.trim().toLowerCase();
-      navLinks.forEach((item) => {
-        const text = item.textContent.toLowerCase();
-        item.hidden = query.length > 0 && !text.includes(query);
-      });
-    });
-  </script>
-</body>
-</html>
+function PlaceholderPage({ title }) {
+  return <><SectionTitle eyebrow="Module" title={title} /><Tile title="Production migration note">This page has been isolated. Bring original functionality across one component at a time instead of pasting the entire internet into one document like a raccoon with a CMS login.</Tile></>;
+}
+
+export default function AuroraProductionApp() {
+  const [page, setPage] = useState("home");
+  const pageComponent = useMemo(() => {
+    switch (page) {
+      case "home": return <HomePage />;
+      case "software": return <SoftwarePage />;
+      case "land": return <LandPage />;
+      case "oversight": return <OversightPage />;
+      case "metacomp": return <MetaComputerPage />;
+      case "control": return <ControlPage />;
+      case "flipper": return <FlipperPage />;
+      case "mining": return <MiningPage />;
+      case "movies": return <MoviesPage />;
+      case "widgets": return <WidgetsPage />;
+      case "vscode": return <VscodePage />;
+      case "ai": return <AiSettingsPage />;
+      default: return <PlaceholderPage title={page} />;
+    }
+  }, [page]);
+
+  return (
+    <Shell page={page} setPage={setPage}>
+      <motion.div key={page} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
+        {pageComponent}
+      </motion.div>
+    </Shell>
+  );
+}
